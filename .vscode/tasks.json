@@ -1,0 +1,28 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run All HR Analytics Notebooks",
+			"type": "shell",
+			"command": "poetry",
+			"args": [
+				"run",
+				"jupyter",
+				"nbconvert",
+				"--to",
+				"notebook",
+				"--execute",
+				"--inplace",
+				"notebooks/1_data_wrangling_eda.ipynb",
+				"notebooks/2_feature_engineering.ipynb",
+				"notebooks/3_baseline_modeling.ipynb",
+				"notebooks/4_class_imbalance_handling.ipynb",
+				"notebooks/5_hyperparameter_tuning.ipynb",
+				"notebooks/6_executive_presentation.ipynb"
+			],
+			"group": "build",
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}
