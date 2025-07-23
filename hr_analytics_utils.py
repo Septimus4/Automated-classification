@@ -1689,14 +1689,53 @@ def create_shapley_analysis_plots(model, X_test, features, max_samples=200):
     plt.subplot(2, 2, 3)
     # Select a random individual for waterfall plot
     individual_idx = np.random.randint(0, len(X_shap))
-    shap.waterfall_plot(
-        shap.Explanation(values=shap_values_plot[individual_idx],
-                         base_values=explainer.expected_value[1] if isinstance(explainer.expected_value,
-                                                                               np.ndarray) else explainer.expected_value,
-                         data=X_shap.iloc[individual_idx].values,
-                         feature_names=X_shap.columns.tolist()),
-        max_display=8, show=False
-    )
+    
+    # Fix for newer SHAP versions - handle binary classification properly
+    if isinstance(shap_values_plot, np.ndarray) and len(shap_values_plot.shape) > 1:
+        # For binary classification, use only the positive class values
+        individual_shap = shap_values_plot[individual_idx]
+        base_value = explainer.expected_value[1] if isinstance(explainer.expected_value, np.ndarray) else explainer.expected_value
+    else:
+        individual_shap = shap_values_plot[individual_idx]
+        base_value = explainer.expected_value
+    
+    try:
+        # Create a proper SHAP Explanation object for the waterfall plot
+        explanation = shap.Explanation(
+            values=individual_shap,
+            base_values=base_value,
+            data=X_shap.iloc[individual_idx].values,
+            feature_names=X_shap.columns.tolist()
+        )
+        
+        # Use the newer SHAP API directly
+        shap.plots.waterfall(explanation, max_display=8, show=False)
+        
+    except Exception as e:
+        print(f"SHAP waterfall plot failed: {e}")
+        try:
+            # Alternative: Use older waterfall_plot function
+            if hasattr(shap, 'waterfall_plot'):
+                shap.waterfall_plot(
+                    base_value, individual_shap, X_shap.iloc[individual_idx],
+                    feature_names=X_shap.columns.tolist(), max_display=8, show=False
+                )
+            else:
+                raise Exception("No waterfall plot function available")
+                
+        except Exception as e2:
+            print(f"Alternative waterfall plot also failed: {e2}")
+            # Ultimate fallback: create a simple bar plot
+            n_features_to_show = min(8, len(individual_shap))
+            colors = ['red' if val > 0 else 'blue' for val in individual_shap[:n_features_to_show]]
+            
+            plt.barh(range(n_features_to_show), 
+                     individual_shap[:n_features_to_show],
+                     color=colors)
+            plt.yticks(range(n_features_to_show), 
+                       X_shap.columns[:n_features_to_show])
+            plt.xlabel('SHAP Value')
+            plt.title('Feature Impact (Individual)\nFallback Visualization', fontsize=12)
     plt.title('SHAP Waterfall Plot\n(Individual Prediction)',
               fontsize=14, fontweight='bold', pad=20)
 
@@ -1708,8 +1747,8 @@ def create_shapley_analysis_plots(model, X_test, features, max_samples=200):
 
     plt.barh(range(len(top_features_idx)),
              feature_importance[top_features_idx],
-             color=[TECHNOVA_COLORS['primary'] if x > 0 else TECHNOVA_COLORS['secondary']
-                    for x in feature_importance[top_features_idx]])
+             color=[TECHNOVA_COLORS['primary'] if val > 0 else TECHNOVA_COLORS['secondary']
+                    for val in feature_importance[top_features_idx]])
     plt.yticks(range(len(top_features_idx)),
                [X_shap.columns[i] for i in top_features_idx])
     plt.xlabel('Mean |SHAP Value|')
