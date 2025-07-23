@@ -1488,55 +1488,6 @@ def create_advanced_beeswarm_plot(X, y, features, use_log=False, sample_size=100
     return fig
 
 
-def create_shapley_analysis_plots(model, X_sample, feature_names, max_display=15):
-    """
-    Create SHAP (Shapley) analysis plots for model interpretability.
-    
-    Parameters:
-    -----------
-    model : sklearn model
-        Trained model (should be tree-based for TreeExplainer)
-    X_sample : pandas.DataFrame
-        Sample of features for SHAP analysis
-    feature_names : list
-        Names of features
-    max_display : int
-        Maximum number of features to display
-        
-    Returns:
-    --------
-    tuple
-        Tuple containing (shap_values, fig_summary, fig_bar)
-    """
-    # Initialize SHAP explainer
-    if hasattr(model, 'predict_proba'):
-        explainer = shap.TreeExplainer(model)
-    else:
-        explainer = shap.Explainer(model)
-
-    # Calculate SHAP values
-    shap_values = explainer.shap_values(X_sample)
-
-    # For binary classification, use positive class SHAP values
-    if isinstance(shap_values, list):
-        shap_values_pos = shap_values[1]
-    else:
-        shap_values_pos = shap_values
-
-    # Create summary plot
-    fig_summary = plt.figure(figsize=(12, 8))
-    shap.summary_plot(shap_values_pos, X_sample, max_display=max_display, show=False)
-    plt.title('SHAP Summary Plot - Feature Impact on Turnover Prediction')
-    plt.tight_layout()
-
-    # Create feature importance plot
-    fig_bar = plt.figure(figsize=(12, 6))
-    shap.summary_plot(shap_values_pos, X_sample, plot_type="bar", max_display=max_display, show=False)
-    plt.title('SHAP Feature Importance - Average Impact on Model Output')
-    plt.tight_layout()
-
-    return shap_values_pos, fig_summary, fig_bar
-
 
 def create_log_transformation_comparison(X, y, features, sample_size=None):
     """
@@ -1629,9 +1580,9 @@ def create_log_transformation_comparison(X, y, features, sample_size=None):
     return fig
 
 
-def create_shapley_analysis_plots(model, X_test, features, max_samples=200):
+def create_detailed_shap_plots(model, X_test, features, max_samples=200):
     """
-    Create comprehensive SHAP analysis plots including summary and bar plots.
+    Create comprehensive SHAP analysis including summary, bar, and waterfall plots.
     
     Parameters:
     -----------
@@ -1646,8 +1597,8 @@ def create_shapley_analysis_plots(model, X_test, features, max_samples=200):
         
     Returns:
     --------
-    matplotlib.figure.Figure
-        Figure with SHAP analysis plots
+    tuple
+        (shap_values, matplotlib.figure.Figure)
     """
     import shap
 
@@ -1759,7 +1710,7 @@ def create_shapley_analysis_plots(model, X_test, features, max_samples=200):
     plt.suptitle('SHAPLEY VALUE ANALYSIS - Model Interpretability',
                  fontsize=18, fontweight='bold', y=0.98)
     plt.tight_layout()
-    return shap_values_plot, fig,
+    return shap_values_plot, fig
 
 
 def prepare_model_for_shap(X, y, test_size=0.2, random_state=42):
